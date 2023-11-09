@@ -3,6 +3,7 @@ import os
 import asyncio
 import aiohttp
 from dotenv import load_dotenv
+from openai import error
 
 from typing import NamedTuple
 
@@ -26,21 +27,39 @@ class Answer(NamedTuple):
     QuestionTokens: int
     AnswerTokens: int
 
-async def send_request(query: str) -> Answer:
+async def send_request(query: str) -> Answer | str:
+    "Строка в случае ошибки"
     openai.api_key = os.getenv("GPT_TOKEN")
     
     MODEL = "gpt-4"
-    response = await openai.ChatCompletion.acreate(
-        model=MODEL,
-        temperature=0,
-        messages=[
-            {
-                "role": "user",
-                "content": query,
-            },
-        ],
-    )
-    
+    try:
+        response = await openai.ChatCompletion.acreate(
+            model=MODEL,
+            temperature=0,
+            messages=[
+                {
+                    "role": "user",
+                    "content": query,
+                },
+            ],
+        )
+    except BaseException as err:
+        match type(err):
+            case error.RateLimitError:
+                return "Превышен лимит запросов. Нужно проверить баланс на OpenAI"
+            case error.APIConnectionError:
+                return "Не удалось подключиться к OpenAI. Попробуйте снова позже или измените свой запрос"
+            case error.AuthenticationError:
+                return "Ошибка авторизации OpenAI"
+            case error.InvalidRequestError:
+                return "Не удалось подключиться к OpenAI. Измените свой запрос"
+            case error.ServiceUnavailableError:
+                return "OpenAI пока недоступен"
+            case error.PermissionError:
+                return "OpenAI не разрешает провести запрос. Нужно проверить аккаунт пользователя OpenAI"
+            case _:
+                return f"Не удалось подключиться к GPT. Текст ошибки: {err}"
+
     # answers = [i["message"]["content"] for i in response["choices"]][0]
     question_tokens = response.usage.prompt_tokens
     answer_tokens = response.usage.completion_tokens

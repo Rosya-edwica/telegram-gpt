@@ -25,20 +25,23 @@ async def echo(message: types.Message):
     start_time = perf_counter()
     msg = await bot.send_message(message.chat.id, "⏳ Подготовка ответа...", reply_to_message_id=message.message_id)
     gpt_answer = await gpt.send_request(message.text)
-    
+
     date = datetime.now() + timedelta(seconds=1) 
     print(f"Message: {message.text}\nAnswer: {gpt_answer}")
     end_time = round(perf_counter() - start_time)
-    answer = "\n".join((
-        gpt_answer.Text,
-        f"\nВремя выполнения: {end_time}",
-        f"Стоимость в долларах: {gpt_answer.Cost.Dollar}$",
-        f"Стоимость в рублях: {gpt_answer.Cost.Ruble}₽",
-        f"Стоимость в долларах (1000 запросов): {gpt_answer.Cost.Dollar_1000}$",
-        f"Стоимость в рублях (1000 запросов): {gpt_answer.Cost.Ruble_1000} ₽",
-        f"Количество токенов(вопрос): {gpt_answer.QuestionTokens}",
-        f"Количество токенов(ответ): {gpt_answer.AnswerTokens}",
-    ))
+    if type(gpt_answer) == str:
+        answer = f"Ошибка: {gpt_answer}"
+    else:
+        answer = "\n".join((
+            gpt_answer.Text,
+            f"\nВремя выполнения: {end_time}",
+            f"Стоимость в долларах: {gpt_answer.Cost.Dollar}$",
+            f"Стоимость в рублях: {gpt_answer.Cost.Ruble}₽",
+            f"Стоимость в долларах (1000 запросов): {gpt_answer.Cost.Dollar_1000}$",
+            f"Стоимость в рублях (1000 запросов): {gpt_answer.Cost.Ruble_1000} ₽",
+            f"Количество токенов(вопрос): {gpt_answer.QuestionTokens}", 
+            f"Количество токенов(ответ): {gpt_answer.AnswerTokens}",
+        ))
     scheduler.add_job(change_message, "date", run_date=date, kwargs={"message": msg, "text": answer})
 
 
