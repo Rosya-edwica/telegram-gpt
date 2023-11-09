@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import os
 from time import perf_counter
-
+import gpt_stat
 import gpt
 
     
@@ -19,6 +19,19 @@ scheduler.start()
 @dp.message_handler(commands='start')
 async def run_bot(message: types.Message):
     await message.answer('Привет от GPT-4! Я могу ответить на все твои вопросы')
+
+    
+@dp.message_handler(commands="gpt_stat_all_time")
+async def gpt_stat_all_time(message: types.Message):
+    data = gpt_stat.get_cost_for_all_time()
+    answer = ""
+    sum_cost = 0
+    for key, value in data.items():
+        answer += f"{key}: {value} $\n" 
+        sum_cost += value
+    answer += f"\nИтог: {sum_cost}\n"
+    await message.answer(answer)
+
 
 @dp.message_handler()
 async def echo(message: types.Message):
