@@ -57,6 +57,8 @@ async def send_request(query: str) -> Answer | str:
                 return "OpenAI пока недоступен"
             case error.PermissionError:
                 return "OpenAI не разрешает провести запрос. Нужно проверить аккаунт пользователя OpenAI"
+            case error.APIError:
+                return "Проблема с API OpenAI. Нужно подождать"
             case _:
                 return f"Не удалось подключиться к GPT. Текст ошибки: {err}"
 
