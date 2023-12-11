@@ -3,12 +3,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 
 from datetime import datetime, timedelta
+import json
 import os
 from time import perf_counter
 import gpt_stat
 import gpt
+from kafka_test import NewProducer
 
-    
 bot = Bot(os.getenv("BOT_TOKEN"))
 dp = Dispatcher(bot)
 
@@ -45,6 +46,18 @@ async def echo(message: types.Message):
     if type(gpt_answer) == str:
         answer = f"Ошибка: {gpt_answer}"
     else:
+        kafka_message = {
+            "date": str(datetime.now()),
+            "user_id": message.from_user.id,
+            "user_name": message.from_user.username,
+            "promt": message.text,
+            "answer": gpt_answer.Text,
+            "cost_usd": gpt_answer.Cost.Dollar,
+            "cost_rub": gpt_answer.Cost.Ruble,
+            "tokens": gpt_answer.AnswerTokens + gpt_answer.QuestionTokens,
+            "time_exe": end_time
+        }
+        producer.send(json.dumps(kafka_message))
         answer = "\n".join((
             gpt_answer.Text,
             f"\nВремя выполнения: {end_time}",
@@ -63,6 +76,7 @@ async def change_message(message: types.Message, text: str):
 
 
 if __name__ == "__main__":
+    producer = NewProducer()
     env = load_dotenv(".env")
     if not env:
         exit("Создайте файл .env")
