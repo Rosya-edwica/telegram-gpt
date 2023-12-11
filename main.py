@@ -57,7 +57,8 @@ async def echo(message: types.Message):
             "tokens": gpt_answer.AnswerTokens + gpt_answer.QuestionTokens,
             "time_exe": end_time
         }
-        producer.send(json.dumps(kafka_message))
+        if producer is not None:
+            producer.send(json.dumps(kafka_message))
         answer = "\n".join((
             gpt_answer.Text,
             f"\nВремя выполнения: {end_time}",
@@ -76,7 +77,11 @@ async def change_message(message: types.Message, text: str):
 
 
 if __name__ == "__main__":
-    producer = NewProducer()
+    try:
+        producer = NewProducer()
+    except BaseException as Err:
+        print("Не удалось подключиться к кафке: ", Err)
+        producer = None
     env = load_dotenv(".env")
     if not env:
         exit("Создайте файл .env")
